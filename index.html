@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cửa Hàng Highlands Coffee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Header với ảnh nền -->
+    <header class="relative bg-amber-900 text-white py-4 bg-cover bg-center" style="background-image: url('Ảnh/coffee-bg.jpg');">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+        <div class="container mx-auto flex justify-between items-center px-4 relative z-10">
+            <h1 class="text-2xl font-bold">Highlands Coffee</h1>
+            <nav>
+                <ul class="flex space-x-4" id="nav-links">
+                  <li><a href="#" class="hover:underline">Trang chủ</a></li>
+                  <li><a href="KH/lichsudathang.html" class="hover:underline">Lịch sử đặt hàng</a></li>
+                  <li><a href="#products" class="hover:underline">Sản phẩm</a></li>
+                  <li id="login-link"><a href="dangnhap.html" class="hover:underline">Đăng nhập</a></li>
+                  <li id="register-link"><a href="KH/dangky.html" class="hover:underline">KH đăng ký</a></li>
+                  <li id="employee-link" class="hidden"><a href="employee.html" class="hover:underline">Nhân viên</a></li>
+                  <li id="manager-link" class="hidden"><a href="manager.html" class="hover:underline">Quản lý</a></li>
+                  <li id="cart-link" class="relative"><a href="#cart" class="hover:underline">Giỏ hàng</a></li>
+
+                        <span id="cart-count" class="absolute -top-2 -right-4 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                    </li>
+                    <li id="user-info" class="hidden">
+                        <span id="username-display" class="text-white"></span>
+                        <button onclick="logout()" class="ml-2 hover:underline">Đăng xuất</button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto py-8 px-4">
+        <section class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800">Chào mừng đến cửa hàng online Highlands Coffee</h2>
+            <p class="text-gray-600 mt-2">Thưởng thức những ly cà phê đậm đà, nguyên chất từ Việt Nam!</p>
+            <!-- Thanh tìm kiếm -->
+            <div class="mt-4 max-w-md mx-auto">
+                <input type="text" id="search-product" class="w-full p-2 border rounded-md" placeholder="Tìm kiếm sản phẩm..." oninput="searchProducts()">
+            </div>
+        </section>
+
+        <!-- Product List -->
+        <section id="products">
+            <!-- Cà phê -->
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Cà phê</h3>
+            <div id="coffee-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Cà phê đen">
+                    <img src="Ảnh/caphe-den.jpg" alt="Cà phê đen" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Cà phê đen</h4>
+                    <p class="text-gray-600">Hương vị đậm đà, truyền thống.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">29.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-caphe-den">50</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-caphe-den" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-caphe-den" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Cà phê đen', this.value, 29000)">
+                    </div>
+                    <button onclick="addToCart('Cà phê đen', 29000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Cà phê sữa đá">
+                    <img src="Ảnh/caphe-sua-da.jpg" alt="Cà phê sữa đá" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Cà phê sữa đá</h4>
+                    <p class="text-gray-600">Ngọt ngào, mát lạnh.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">35.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-caphe-sua-da">40</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-caphe-sua-da" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-caphe-sua-da" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Cà phê sữa đá', this.value, 35000)">
+                    </div>
+                    <button onclick="addToCart('Cà phê sữa đá', 35000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Cà phê sữa nóng">
+                    <img src="Ảnh/caphe-sua-nong.jpg" alt="Cà phê sữa nóng" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Cà phê sữa nóng</h4>
+                    <p class="text-gray-600">Ấm nóng, thơm ngon.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">39.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-caphe-sua-nong">30</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-caphe-sua-nong" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-caphe-sua-nong" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Cà phê sữa nóng', this.value, 39000)">
+                    </div>
+                    <button onclick="addToCart('Cà phê sữa nóng', 39000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+            </div>
+
+            <!-- Loại cà phê -->
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Loại cà phê</h3>
+            <div id="coffee-type-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Espresso">
+                    <img src="Ảnh/espresso.jpg" alt="Espresso" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Espresso</h4>
+                    <p class="text-gray-600">Mạnh mẽ, đậm đà.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">35.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-espresso">25</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-espresso" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-espresso" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Espresso', this.value, 35000)">
+                    </div>
+                    <button onclick="addToCart('Espresso', 35000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Cappuccino">
+                    <img src="Ảnh/cappuccino.jpg" alt="Cappuccino" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Cappuccino</h4>
+                    <p class="text-gray-600">Bọt sữa mịn màng, thơm ngon.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">55.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-cappuccino">20</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-cappuccino" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-cappuccino" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Cappuccino', this.value, 55000)">
+                    </div>
+                    <button onclick="addToCart('Cappuccino', 55000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Latte">
+                    <img src="Ảnh/latte.jpg" alt="Latte" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Latte</h4>
+                    <p class="text-gray-600">Ngọt nhẹ, cân bằng.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">45.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-latte">30</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-latte" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-latte" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Latte', this.value, 45000)">
+                    </div>
+                    <button onclick="addToCart('Latte', 45000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Macchiato">
+                    <img src="Ảnh/macchiato.jpg" alt="Macchiato" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Macchiato</h4>
+                    <p class="text-gray-600">Hương vị đậm, lớp bọt tinh tế.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">50.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-macchiato">15</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-macchiato" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-macchiato" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Macchiato', this.value, 50000)">
+                    </div>
+                    <button onclick="addToCart('Macchiato', 50000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+            </div>
+
+            <!-- Trà -->
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Trà</h3>
+            <div id="tea-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Trà Thạch Vải">
+                    <img src="Ảnh/tra-thach-vai.jpg" alt="Trà Thạch Vải" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Trà Thạch Vải</h4>
+                    <p class="text-gray-600">Thơm ngọt, mát lạnh.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">45.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-tra-thach-vai">25</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-tra-thach-vai" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-tra-thach-vai" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Trà Thạch Vải', this.value, 45000)">
+                    </div>
+                    <button onclick="addToCart('Trà Thạch Vải', 45000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Trà Thạch Đào">
+                    <img src="Ảnh/tra-thach-dao.jpg" alt="Trà Thạch Đào" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Trà Thạch Đào</h4>
+                    <p class="text-gray-600">Hương đào tươi mát.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">45.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-tra-thach-dao">20</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-tra-thach-dao" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-tra-thach-dao" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Trà Thạch Đào', this.value, 45000)">
+                    </div>
+                    <button onclick="addToCart('Trà Thạch Đào', 45000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 product-item" data-name="Trà Sen Vàng">
+                    <img src="Ảnh/tra-sen-vang.jpg" alt="Trà Sen Vàng" class="w-full h-48 object-cover rounded-md" />
+                    <h4 class="text-xl font-semibold mt-2">Trà Sen Vàng</h4>
+                    <p class="text-gray-600">Thơm nhẹ, tinh tế.</p>
+                    <p class="text-lg font-bold text-amber-900 mt-2">45.000 VNĐ</p>
+                    <p class="text-gray-600">Số lượng tồn: <span id="inventory-tra-sen-vang">30</span></p>
+                    <div class="flex items-center mt-2">
+                        <label for="quantity-tra-sen-vang" class="mr-2">Số lượng:</label>
+                        <input type="number" id="quantity-tra-sen-vang" min="1" value="1" class="w-16 p-1 border rounded-md" onchange="updateQuantity('Trà Sen Vàng', this.value, 45000)">
+                    </div>
+                    <button onclick="addToCart('Trà Sen Vàng', 45000)" class="mt-4 w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Thêm vào giỏ</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cart Section -->
+        <section id="cart" class="mt-12">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Giỏ hàng</h3>
+            <div id="cart-items" class="bg-white rounded-lg shadow-md p-4">
+                <p class="text-gray-600">Giỏ hàng trống.</p>
+            </div>
+            <p class="text-lg font-bold text-gray-800 mt-4">Tổng cộng: <span id="cart-total">0 VNĐ</span></p>
+            <button onclick="goToOrder()" class="mt-4 bg-amber-900 text-white py-2 px-4 rounded-md hover:bg-amber-800">Đặt Hàng</button>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-amber-900 text-white py-4">
+        <div class="container mx-auto text-center">
+            <p>© 2025 Highlands Coffee. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Dữ liệu số lượng tồn ban đầu (giả lập)
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || {
+            'Cà phê đen': 1150,
+            'Cà phê sữa đá': 1140,
+            'Cà phê sữa nóng': 1130,
+            'Espresso': 1125,
+            'Cappuccino': 1120,
+            'Latte': 1130,
+            'Macchiato': 1115,
+            'Trà Thạch Vải': 1125,
+            'Trà Thạch Đào': 1120,
+            'Trà Sen Vàng': 1130
+        };
+
+        // Dữ liệu sản phẩm chi tiết
+        let products = JSON.parse(localStorage.getItem('products')) || [
+            { name: 'Cà phê đen', price: 29000, stock: 50 },
+            { name: 'Cà phê sữa đá', price: 35000, stock: 40 },
+            { name: 'Cà phê sữa nóng', price: 39000, stock: 30 },
+            { name: 'Espresso', price: 35000, stock: 25 },
+            { name: 'Cappuccino', price: 55000, stock: 20 },
+            { name: 'Latte', price: 45000, stock: 30 },
+            { name: 'Macchiato', price: 50000, stock: 15 },
+            { name: 'Trà Thạch Vải', price: 45000, stock: 25 },
+            { name: 'Trà Thạch Đào', price: 45000, stock: 20 },
+            { name: 'Trà Sen Vàng', price: 45000, stock: 30 }
+        ];
+
+        // Giỏ hàng
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        // Cập nhật số lượng tồn trên giao diện
+        function updateInventoryDisplay() {
+            Object.keys(inventory).forEach(product => {
+                const inventoryElement = document.getElementById(`inventory-${product.toLowerCase().replace(/ /g, '-')}`);
+                if (inventoryElement) {
+                    inventoryElement.textContent = inventory[product];
+                }
+            });
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            localStorage.setItem('products', JSON.stringify(products)); // Đồng bộ products
+        }
+
+        // Kiểm tra trạng thái đăng nhập và cập nhật điều hướng
+        function checkLoginStatus() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const loginLink = document.getElementById('login-link');
+            const registerLink = document.getElementById('register-link');
+            const employeeLink = document.getElementById('employee-link');
+            const managerLink = document.getElementById('manager-link');
+            const userInfo = document.getElementById('user-info');
+            const usernameDisplay = document.getElementById('username-display');
+
+            if (currentUser) {
+                loginLink.classList.add('hidden');
+                registerLink.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                const username = currentUser.VaiTro === 'manager' ? currentUser.TenDangNhap : currentUser.TenNhanVien;
+                usernameDisplay.textContent = `Xin chào, ${user.TenKhachhangKhachhang} (${currentUser.VaiTro === 'customer' ? 'Khách Hàng' : currentUser.VaiTro === 'employee' ? 'Nhân Viên' : 'Quản Lý'})`;
+
+                if (currentUser.VaiTro === 'employee') {
+                    employeeLink.classList.remove('hidden');
+                } else if (currentUser.VaiTro === 'manager') {
+                    managerLink.classList.remove('hidden');
+                }
+            } else {
+                loginLink.classList.remove('hidden');
+                registerLink.classList.remove('hidden');
+                employeeLink.classList.add('hidden');
+                managerLink.classList.add('hidden');
+                userInfo.classList.add('hidden');
+            }
+        }
+
+        // Đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            checkLoginStatus();
+            alert('Đã đăng xuất!');
+            window.location.href = 'dangnhap.html';
+        }
+
+        // Tìm kiếm sản phẩm
+        function searchProducts() {
+            const searchTerm = document.getElementById('search-product').value.toLowerCase();
+            const productItems = document.querySelectorAll('.product-item');
+            productItems.forEach(item => {
+                const productName = item.getAttribute('data-name').toLowerCase();
+                item.style.display = productName.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        // Cập nhật số lượng sản phẩm trong giỏ hàng
+        function updateQuantity(name, quantity, price) {
+            quantity = parseInt(quantity);
+            if (quantity < 1) quantity = 1;
+            const item = cart.find(item => item.name === name);
+            const product = products.find(p => p.name === name);
+            const availableStock = inventory[name];
+            const currentQuantityInCart = item ? item.quantity : 0;
+
+            if (quantity > availableStock + currentQuantityInCart) {
+                alert(`Số lượng tồn không đủ! Chỉ còn ${availableStock} ${name}.`);
+                document.getElementById(`quantity-${name.toLowerCase().replace(/ /g, '-')}`).value = currentQuantityInCart || 1;
+                return;
+            }
+
+            if (item) {
+                const deltaQuantity = quantity - item.quantity;
+                item.quantity = quantity;
+                inventory[name] -= deltaQuantity;
+                product.stock = inventory[name];
+            } else {
+                cart.push({ name, price, quantity });
+                inventory[name] -= quantity;
+                product.stock = inventory[name];
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateInventoryDisplay();
+            updateCart();
+        }
+
+        // Thêm sản phẩm vào giỏ hàng
+        function addToCart(name, price) {
+            const quantityInputId = `quantity-${name.toLowerCase().replace(/ /g, '-')}`;
+            const quantity = parseInt(document.getElementById(quantityInputId)?.value || 1);
+            const availableStock = inventory[name];
+            const itemInCart = cart.find(item => item.name === name);
+            const currentQuantityInCart = itemInCart ? itemInCart.quantity : 0;
+            const product = products.find(p => p.name === name);
+
+            if (quantity + currentQuantityInCart > availableStock) {
+                alert(`Số lượng tồn không đủ! Chỉ còn ${availableStock} ${name}.`);
+                return;
+            }
+
+            if (itemInCart) {
+                itemInCart.quantity += quantity;
+            } else {
+                cart.push({ name, price, quantity });
+            }
+
+            inventory[name] -= quantity;
+            product.stock = inventory[name];
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateInventoryDisplay();
+            updateCart();
+        }
+
+        // Xóa sản phẩm khỏi giỏ hàng
+        function removeFromCart(name) {
+            const item = cart.find(item => item.name === name);
+            const product = products.find(p => p.name === name);
+            if (item) {
+                inventory[name] += item.quantity;
+                product.stock = inventory[name];
+                cart = cart.filter(item => item.name !== name);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateInventoryDisplay();
+                updateCart();
+            }
+        }
+
+        // Cập nhật hiển thị giỏ hàng và badge
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            const cartCount = document.getElementById('cart-count');
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-600">Giỏ hàng trống.</p>';
+                cartTotal.textContent = '0 VNĐ';
+                cartCount.classList.add('hidden');
+                cartCount.textContent = '0';
+                return;
+            }
+
+            let total = 0;
+            let itemCount = 0;
+            cartItems.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                itemCount += item.quantity;
+                return `
+                    <div class="flex justify-between items-center mb-2">
+                        <p>${item.name} (x${item.quantity})</p>
+                        <div class="flex items-center">
+                            <p class="mr-4">${itemTotal.toLocaleString()} VNĐ</p>
+                            <button onclick="removeFromCart('${item.name}')" class="text-red-500 hover:underline">Xóa</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            cartTotal.textContent = `${total.toLocaleString()} VNĐ`;
+            cartCount.textContent = itemCount;
+            cartCount.classList.remove('hidden');
+        }
+
+        // Chuyển đến trang đặt hàng
+        function goToOrder() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                alert('Vui lòng đăng nhập để đặt hàng!');
+                window.location.href = 'dangnhap.html';
+                return;
+            }
+            if (cart.length === 0) {
+                alert('Giỏ hàng trống!');
+                return;
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.location.href = 'KH/dathang.html';
+        }
+
+        // Khởi tạo
+        checkLoginStatus();
+        updateInventoryDisplay();
+        updateCart();
+    </script>
+</body>
+</html>

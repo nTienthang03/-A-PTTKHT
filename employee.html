@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng - Nhân Viên</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-4xl">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Quản Lý Đơn Hàng - Nhân Viên</h2>
+        <div id="orderTable" class="mb-6">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border p-3 text-left">Mã Đơn Hàng</th>
+                        <th class="border p-3 text-left">Khách Hàng</th>
+                        <th class="border p-3 text-left">Ngày Đặt</th>
+                        <th class="border p-3 text-left">Trạng Thái</th>
+                        <th class="border p-3 text-left">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="orderList"></tbody>
+            </table>
+        </div>
+        <div id="orderDetails" class="hidden bg-gray-50 p-4 rounded-md border border-gray-300 mb-6"></div>
+        <div class="text-center mt-6">
+            <button onclick="logout()" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-500">Đăng Xuất</button>
+        </div>
+    </div>
+
+    <script>
+        // Kiểm tra vai trò nhân viên
+        function checkEmployeeAccess() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser || currentUser.VaiTro !== 'employee') {
+                alert('Bạn cần đăng nhập với vai trò Nhân Viên để truy cập trang này!');
+                window.location.href = 'dangnhap.html';
+            }
+        }
+
+        // Đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            alert('Đăng xuất thành công!');
+            window.location.href = '../dangnhap.html';
+        }
+
+        // Lấy tên khách hàng từ registeredUsers
+        function getCustomerName(customerId) {
+            const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const customer = users.find(user => user.MaKhachHang === customerId);
+            return customer ? customer.TenKhachHang : 'Khách Hàng Không Xác Định';
+        }
+
+        // Tải danh sách đơn hàng
+        function loadOrders() {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const orderList = document.getElementById('orderList');
+            orderList.innerHTML = '';
+            orders.forEach(order => {
+                const customerName = getCustomerName(order.MaKhachHang);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border p-3">${order.MaDonHang}</td>
+                    <td class="border p-3">${customerName}</td>
+                    <td class="border p-3">${order.NgayDat}</td>
+                    <td class="border p-3">
+                        <select onchange="updateStatus('${order.MaDonHang}', this.value)" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                            <option value="Chờ xử lý" ${order.TrangThai === 'Chờ xử lý' ? 'selected' : ''}>Chờ xử lý</option>
+                            <option value="Đang xử lý" ${order.TrangThai === 'Đang xử lý' ? 'selected' : ''}>Đang xử lý</option>
+                            <option value="Đã giao" ${order.TrangThai === 'Đã giao' ? 'selected' : ''}>Đã giao</option>
+                            <option value="Đã hủy" ${order.TrangThai === 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
+                            <option value="Đã thanh toán" ${order.TrangThai === 'Đã thanh toán' ? 'selected' : ''}>Đã thanh toán</option>
+                        </select>
+                    </td>
+                    <td class="border p-3"><button onclick="viewDetails('${order.MaDonHang}')" class="bg-amber-900 text-white py-1 px-3 rounded-md hover:bg-amber-800">Xem Chi Tiết</button></td>
+                `;
+                orderList.appendChild(row);
+            });
+        }
+
+        // Cập nhật trạng thái đơn hàng
+        function updateStatus(orderId, newStatus) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.MaDonHang === orderId);
+            if (order) {
+                order.TrangThai = newStatus;
+                // Nếu trạng thái là "Đã thanh toán", cập nhật DaThanhToan
+                if (newStatus === 'Đã thanh toán') {
+                    order.DaThanhToan = true;
+                }
+                localStorage.setItem('orders', JSON.stringify(orders));
+                sendNotification(orderId, order.MaKhachHang, order.DiaChiGiaoHang, newStatus);
+                alert(`Đơn hàng ${orderId} đã được cập nhật thành ${newStatus}!`);
+                loadOrders();
+            }
+        }
+
+        // Gửi thông báo
+        function sendNotification(orderId, customer, address, status) {
+            let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            const time = new Date().toLocaleString();
+            notifications.push({
+                orderId: orderId,
+                customer: customer,
+                time: time,
+                message: `Đơn hàng ${orderId} từ ${customer} đến ${address} - Trạng thái: ${status}`
+            });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+        }
+
+        // Xem chi tiết đơn hàng
+        function viewDetails(orderId) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.MaDonHang === orderId);
+            const detailsDiv = document.getElementById('orderDetails');
+            if (order) {
+                const customerName = getCustomerName(order.MaKhachHang);
+                let itemsHtml = order.CartItems.map(item => `
+                    <li>${item.name} - Số lượng: ${item.quantity} - Giá: ${item.price.toLocaleString()} VNĐ</li>
+                `).join('');
+                detailsDiv.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Chi Tiết Đơn Hàng ${order.MaDonHang}</h3>
+                    <p><strong>Khách Hàng:</strong> ${customerName}</p>
+                    <p><strong>Mã Khách Hàng:</strong> ${order.MaKhachHang}</p>
+                    <p><strong>Ngày Đặt:</strong> ${order.NgayDat}</p>
+                    <p><strong>Trạng Thái:</strong> ${order.TrangThai}</p>
+                    <p><strong>Phương Thức Thanh Toán:</strong> ${order.PhuongThucThanhToan}</p>
+                    <p><strong>Trạng Thái Thanh Toán:</strong> ${order.DaThanhToan ? 'Đã thanh toán' : 'Chưa thanh toán'}</p>
+                    <p><strong>Địa Chỉ Giao Hàng:</strong> ${order.DiaChiGiaoHang}</p>
+                    <p><strong>Thời Gian Giao:</strong> ${order.ThoiGianGiao}</p>
+                    <p><strong>Sản Phẩm:</strong></p>
+                    <ul class="list-disc pl-5">${itemsHtml}</ul>
+                    <p><strong>Tổng Tiền:</strong> ${order.TongTien.toLocaleString()} VNĐ</p>
+                `;
+                detailsDiv.classList.remove('hidden');
+            } else {
+                detailsDiv.innerHTML = '<p class="text-red-600">Không tìm thấy đơn hàng!</p>';
+                detailsDiv.classList.remove('hidden');
+            }
+        }
+
+        // Kiểm tra quyền truy cập và tải đơn hàng khi trang được tải
+        window.onload = () => {
+            checkEmployeeAccess();
+            loadOrders();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng Ký - Cà Phê Việt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Đăng Ký</h2>
+
+        <div class="mb-4">
+            <label for="role" class="block text-gray-700 font-semibold mb-2">Vai trò</label>
+            <select id="role" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" onchange="toggleAddressField()">
+                <option value="" disabled selected>Chọn vai trò</option>
+                <option value="manager">Quản Lý</option>
+                <option value="employee">Nhân Viên</option>
+                <option value="customer">Khách Hàng</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label for="username" class="block text-gray-700 font-semibold mb-2">Tên đăng nhập</label>
+            <input type="text" id="username" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" placeholder="Nhập tên đăng nhập" />
+        </div>
+
+        <div class="mb-4">
+            <label for="password" class="block text-gray-700 font-semibold mb-2">Mật khẩu</label>
+            <input type="password" id="password" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" placeholder="Nhập mật khẩu" />
+        </div>
+
+        <div class="mb-4">
+            <label for="email" class="block text-gray-700 font-semibold mb-2">Email</label>
+            <input type="email" id="email" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" placeholder="Nhập email" />
+        </div>
+
+        <div class="mb-4">
+            <label for="phone" class="block text-gray-700 font-semibold mb-2">Số điện thoại</label>
+            <input type="text" id="phone" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" placeholder="Nhập số điện thoại" />
+        </div>
+
+        <div class="mb-4" id="address-container" style="display:none;">
+            <label for="address" class="block text-gray-700 font-semibold mb-2">Địa chỉ</label>
+            <input type="text" id="address" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" placeholder="Nhập địa chỉ" />
+        </div>
+
+        <button onclick="handleRegister()" class="w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800">Đăng Ký</button>
+
+        <p class="text-center text-gray-600 mt-4">Đã có tài khoản? <a href="../dangnhap.html" class="text-amber-900 hover:underline">Đăng nhập</a></p>
+    </div>
+
+    <script>
+        function generateID(prefix) {
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            return prefix + randomNum;
+        }
+
+        function getCurrentDate() {
+            return new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        }
+
+        function toggleAddressField() {
+            const role = document.getElementById('role').value;
+            const addressContainer = document.getElementById('address-container');
+            if (role === 'customer') {
+                addressContainer.style.display = 'block';
+            } else {
+                addressContainer.style.display = 'none';
+            }
+        }
+
+        function handleRegister() {
+            const role = document.getElementById('role').value;
+            const username = document.getElementById('username').value.trim();
+            const passwordRaw = document.getElementById('password').value;
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const address = document.getElementById('address').value.trim();
+
+            if (!role) {
+                alert('Vui lòng chọn vai trò!');
+                return;
+            }
+            if (!username || !passwordRaw || !email || !phone || (role === 'customer' && !address)) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+
+            // Với quản lý, yêu cầu nhập mật khẩu bảo mật
+            if (role === 'manager') {
+                const adminPass = prompt('Nhập mật khẩu bảo mật để đăng ký Quản Lý:');
+                if (adminPass !== '2003') {
+                    alert('Mật khẩu bảo mật không đúng! Đăng ký thất bại.');
+                    return;
+                }
+            }
+
+            // Với nhân viên, yêu cầu nhập mật khẩu bảo mật 8888
+            if (role === 'employee') {
+                const employeePass = prompt('Nhập mật khẩu bảo mật để đăng ký Nhân Viên:');
+                if (employeePass !== '8888') {
+                    alert('Mật khẩu bảo mật không đúng! Đăng ký thất bại.');
+                    return;
+                }
+            }
+
+            const password = btoa(passwordRaw); // mã hóa base64
+
+            let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+
+            // Kiểm tra username tồn tại cùng vai trò
+            const exists = registeredUsers.some(user => {
+                if (role === 'manager' && user.MaAdmin) return user.TenDangNhap === username;
+                if (role === 'employee' && user.MaNhanVien) return user.TenNhanVien === username;
+                if (role === 'customer' && user.MaKhachHang) return user.TenKhachHang === username;
+                return false;
+            });
+
+            if (exists) {
+                alert('Tên đăng nhập đã tồn tại cho vai trò này!');
+                return;
+            }
+
+            const dateNow = getCurrentDate();
+            let newUser = {};
+
+            if (role === 'manager') {
+                newUser = {
+                    MaAdmin: generateID('AD'),
+                    TenDangNhap: username,
+                    MatKhau: password,
+                    Email: email,
+                    VaiTro: role,
+                    NgayTao: dateNow
+                };
+            } else if (role === 'employee') {
+                newUser = {
+                    MaNhanVien: generateID('NV'),
+                    TenNhanVien: username,
+                    MatKhau: password,
+                    Email: email,
+                    SDT: phone,
+                    VaiTro: role,
+                    NgayVaoLam: dateNow
+                };
+            } else if (role === 'customer') {
+                newUser = {
+                    MaKhachHang: generateID('KH'),
+                    TenKhachHang: username,
+                    MatKhau: password,
+                    Email: email,
+                    SDT: phone,
+                    DiaChi: address,
+                    VaiTro: role,
+                    NgayTaoTaiKhoan: dateNow
+                };
+            }
+
+            registeredUsers.push(newUser);
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+            alert(`Đăng ký ${role === 'customer' ? 'khách hàng' : role === 'employee' ? 'nhân viên' : 'quản lý'} thành công! Chuyển sang trang đăng nhập...`);
+            window.location.href = '../dangnhap.html';
+        }
+    </script>
+</body>
+</html>

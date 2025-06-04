@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử Đặt Hàng - Highlands Coffee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-4xl">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Lịch Sử Đặt Hàng</h2>
+
+        <!-- User Info -->
+        <div class="mb-4 text-center">
+            <p id="user-info" class="text-gray-700"></p>
+        </div>
+
+        <!-- Order Table -->
+        <div id="orderTable" class="mb-6">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border p-3 text-left">Mã Đơn Hàng</th>
+                        <th class="border p-3 text-left">Ngày Đặt</th>
+                        <th class="border p-3 text-left">Tổng Tiền</th>
+                        <th class="border p-3 text-left">Trạng Thái</th>
+                        <th class="border p-3 text-left">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="orderList"></tbody>
+            </table>
+        </div>
+
+        <!-- Order Details -->
+        <div id="orderDetails" class="hidden bg-gray-50 p-4 rounded-md border border-gray-300 mb-6"></div>
+
+        <!-- Navigation Links -->
+        <div class="text-center text-gray-600 mt-6 space-y-2">
+            <p><a href="dathang.html" class="text-amber-900 hover:underline">Quay lại Đặt Hàng</a></p>
+            <p><button onclick="logout()" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-500">Đăng Xuất</button></p>
+        </div>
+    </div>
+
+    <script>
+        // Kiểm tra trạng thái đăng nhập
+        function checkLoginStatus() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userInfo = document.getElementById('user-info');
+            if (currentUser) {
+                userInfo.textContent = `Xin chào, ${currentUser.VaiTro === 'manager' ? currentUser.TenDangNhap : currentUser.TenNhanVien || currentUser.TenKhachHang} (${currentUser.VaiTro === 'customer' ? 'Khách Hàng' : currentUser.VaiTro})`;
+            } else {
+                alert('Vui lòng đăng nhập!');
+                window.location.href = '../dangnhap.html';
+            }
+            return currentUser;
+        }
+
+        // Đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            alert('Đăng xuất thành công!');
+            window.location.href = '../dangnhap.html';
+        }
+
+        // Tải danh sách đơn hàng của người dùng hiện tại
+        function loadOrders() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const orderList = document.getElementById('orderList');
+            orderList.innerHTML = '';
+
+            // Lọc đơn hàng theo MaKhachHang
+            const userOrders = orders.filter(order => order.MaKhachHang === (currentUser.MaKhachHang || currentUser.TenDangNhap || currentUser.TenNhanVien || currentUser.TenKhachHang));
+
+            if (userOrders.length === 0) {
+                orderList.innerHTML = '<tr><td colspan="5" class="border p-3 text-center text-gray-600">Bạn chưa có đơn hàng nào.</td></tr>';
+                return;
+            }
+
+            userOrders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border p-3">${order.MaDonHang}</td>
+                    <td class="border p-3">${order.NgayDat}</td>
+                    <td class="border p-3">${order.TongTien.toLocaleString()} VNĐ</td>
+                    <td class="border p-3">
+                        <span class="${order.TrangThai === 'Đã thanh toán' ? 'text-green-600' : order.TrangThai === 'Đã hủy' ? 'text-red-600' : 'text-yellow-600'} font-semibold">${order.TrangThai}</span>
+                    </td>
+                    <td class="border p-3">
+                        <button onclick="viewDetails('${order.MaDonHang}')" class="bg-amber-900 text-white py-1 px-3 rounded-md hover:bg-amber-800">Xem Chi Tiết</button>
+                    </td>
+                `;
+                orderList.appendChild(row);
+            });
+        }
+
+        // Xem chi tiết đơn hàng
+        function viewDetails(orderId) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.MaDonHang === orderId);
+            const detailsDiv = document.getElementById('orderDetails');
+            if (order) {
+                let itemsHtml = order.CartItems.map(item => `
+                    <li>${item.name} - Số lượng: ${item.quantity} - Giá: ${item.price.toLocaleString()} VNĐ</li>
+                `).join('');
+                detailsDiv.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Chi Tiết Đơn Hàng ${order.MaDonHang}</h3>
+                    <p><strong>Mã Khách Hàng:</strong> ${order.MaKhachHang}</p>
+                    <p><strong>Ngày Đặt:</strong> ${order.NgayDat}</p>
+                    <p><strong>Tổng Tiền:</strong> ${order.TongTien.toLocaleString()} VNĐ</p>
+                    <p><strong>Trạng Thái:</strong> <span class="${order.TrangThai === 'Đã thanh toán' ? 'text-green-600' : order.TrangThai === 'Đã hủy' ? 'text-red-600' : 'text-yellow-600'} font-semibold">${order.TrangThai}</span></p>
+                    <p><strong>Phương Thức Thanh Toán:</strong> ${order.PhuongThucThanhToan}</p>
+                    <p><strong>Trạng Thái Thanh Toán:</strong> ${order.DaThanhToan ? 'Đã thanh toán' : 'Chưa thanh toán'}</p>
+                    <p><strong>Địa Chỉ Giao Hàng:</strong> ${order.DiaChiGiaoHang}</p>
+                    <p><strong>Thời Gian Giao:</strong> ${order.ThoiGianGiao}</p>
+                    <p><strong>Sản Phẩm:</strong></p>
+                    <ul class="list-disc pl-5">${itemsHtml}</ul>
+                    <button onclick="detailsDiv.classList.add('hidden')" class="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 mt-4">Đóng</button>
+                `;
+                detailsDiv.classList.remove('hidden');
+            } else {
+                detailsDiv.innerHTML = '<p class="text-red-600">Không tìm thấy đơn hàng!</p>';
+                detailsDiv.classList.remove('hidden');
+            }
+        }
+
+        // Khởi tạo trang
+        window.onload = () => {
+            checkLoginStatus();
+            loadOrders();
+        };
+    </script>
+</body>
+</html>

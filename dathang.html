@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đặt Hàng - Highlands Coffee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <!-- Header -->
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Đặt Hàng</h2>
+
+        <!-- User Info -->
+        <div class="mb-4 text-center">
+            <p id="user-info" class="text-gray-700"></p>
+        </div>
+
+        <!-- Cart Items -->
+        <div id="cart-items" class="mb-6">
+            <h3 class="text-xl font-semibold mb-2">Giỏ hàng của bạn</h3>
+            <div id="cart-list" class="space-y-2"></div>
+            <p class="text-lg font-bold text-gray-800 mt-2">Tổng cộng: <span id="cart-total">0 VNĐ</span></p>
+        </div>
+
+        <!-- Delivery Address -->
+        <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-2">Địa chỉ giao hàng</h3>
+            <input type="text" id="delivery-address" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" placeholder="Nhập địa chỉ giao hàng" required>
+            <p id="address-error" class="text-red-500 text-sm hidden">Vui lòng nhập địa chỉ giao hàng!</p>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-2">Phương thức thanh toán</h3>
+            <div class="flex space-x-4">
+                <label class="flex items-center">
+                    <input type="radio" name="payment-method" value="transfer" class="mr-2" checked>
+                    Chuyển khoản
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="payment-method" value="cash" class="mr-2">
+                    Tiền mặt
+                </label>
+            </div>
+        </div>
+
+        <!-- Delivery Time -->
+        <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-2">Thời gian giao hàng</h3>
+            <input type="datetime-local" id="delivery-time" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" required>
+            <p id="delivery-error" class="text-red-500 text-sm hidden">Thời gian giao hàng phải sau thời gian hiện tại!</p>
+        </div>
+
+        <!-- Place Order Button -->
+        <button onclick="placeOrder()" id="place-order-btn" class="w-full bg-amber-900 text-white py-2 rounded-md hover:bg-amber-800 mb-4 disabled:bg-gray-400">Đặt Hàng</button>
+
+        <!-- Cancel Order Button -->
+        <button onclick="showCancelOrder()" id="cancel-order-btn" class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-500 mb-4 hidden">Hủy Đơn Hàng</button>
+
+        <!-- Message -->
+        <p id="message" class="text-center text-green-500 mt-4 hidden"></p>
+
+        <!-- Navigation Links -->
+        <div class="text-center text-gray-600 mt-6 space-y-2">
+            <p><a href="../index.html" class="text-amber-900 hover:underline">Quay lại Trang chủ</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Khởi tạo biến toàn cục
+        let latestOrderId = null;
+
+        // Thêm dữ liệu mẫu nếu không có đơn hàng
+        if (!localStorage.getItem('orders')) {
+            const sampleOrders = [
+                {
+                    MaDonHang: 'ORDER_123456789',
+                    MaKhachHang: 'KH1001',
+                    MaQuanLy: 'QL001',
+                    NgayDat: new Date().toLocaleString(),
+                    TongTien: 100000,
+                    TrangThai: 'Chờ xử lý',
+                    PhuongThucThanhToan: 'Chuyển khoản',
+                    DaThanhToan: false,
+                    DiaChiGiaoHang: '123 Đường Test, Quận 1',
+                    ThoiGianGiao: new Date(Date.now() + 3600000).toLocaleString(),
+                    CartItems: [
+                        { name: 'Cà phê đen', price: 29000, quantity: 2 },
+                        { name: 'Trà thạch vải', price: 45000, quantity: 1 }
+                    ]
+                }
+            ];
+            localStorage.setItem('orders', JSON.stringify(sampleOrders));
+            console.log('Đã thêm đơn hàng mẫu:', sampleOrders);
+        }
+
+        // Hàm kiểm tra trạng thái đăng nhập và lấy thông tin khách hàng
+        function checkLoginStatus() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userInfo = document.getElementById('user-info');
+            if (currentUser) {
+                if (currentUser.VaiTro === 'customer') {
+                    userInfo.textContent = `Xin chào, ${currentUser.TenKhachHang} (Khách Hàng)`;
+                    document.getElementById('delivery-address').value = currentUser.DiaChi || '';
+                } else {
+                    userInfo.textContent = `Xin chào, ${currentUser.VaiTro === 'manager' ? currentUser.TenDangNhap : currentUser.TenNhanVien} (${currentUser.VaiTro})`;
+                }
+            } else {
+                alert('Vui lòng đăng nhập!');
+                window.location.href = '../dangnhap.html';
+            }
+        }
+
+        // Hàm cập nhật giỏ hàng
+        function updateCart() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartList = document.getElementById('cart-list');
+            const cartTotal = document.getElementById('cart-total');
+            const placeOrderBtn = document.getElementById('place-order-btn');
+
+            if (cart.length === 0) {
+                cartList.innerHTML = '<p class="text-gray-600">Giỏ hàng trống.</p>';
+                cartTotal.textContent = '0 VNĐ';
+                placeOrderBtn.disabled = true;
+                return;
+            }
+
+            let total = 0;
+            cartList.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                return `
+                    <div class="flex justify-between items-center">
+                        <p>${item.name} (x${item.quantity})</p>
+                        <p>${itemTotal.toLocaleString()} VNĐ</p>
+                    </div>
+                `;
+            }).join('');
+            cartTotal.textContent = `${total.toLocaleString()} VNĐ`;
+            placeOrderBtn.disabled = false;
+        }
+
+        // Hàm đặt thời gian giao hàng tối thiểu
+        function setMinDeliveryTime() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 30); // Yêu cầu giao hàng sau ít nhất 30 phút
+            const minTime = now.toISOString().slice(0, 16);
+            document.getElementById('delivery-time').setAttribute('min', minTime);
+        }
+
+        // Hàm gửi thông báo
+        function sendNotification(orderId, customerId, address, status) {
+            const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const customer = users.find(user => user.MaKhachHang === customerId);
+            const customerName = customer ? customer.TenKhachHang : 'Khách Hàng Không Xác Định';
+            let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            const time = new Date().toLocaleString();
+            notifications.push({
+                orderId: orderId,
+                customer: customerName,
+                time: time,
+                message: `Đơn hàng ${orderId} từ ${customerName} đến ${address} - Trạng thái: ${status}`
+            });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+        }
+
+        // Hàm đặt hàng
+        function placeOrder() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            if (cart.length === 0) {
+                alert('Giỏ hàng trống!');
+                return;
+            }
+
+            const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+            const deliveryTimeInput = document.getElementById('delivery-time').value;
+            const deliveryAddress = document.getElementById('delivery-address').value.trim();
+            const deliveryError = document.getElementById('delivery-error');
+            const addressError = document.getElementById('address-error');
+
+            if (!deliveryAddress) {
+                addressError.classList.remove('hidden');
+                return;
+            } else {
+                addressError.classList.add('hidden');
+            }
+
+            const deliveryTime = new Date(deliveryTimeInput);
+            const now = new Date();
+            if (deliveryTime <= now) {
+                deliveryError.classList.remove('hidden');
+                return;
+            } else {
+                deliveryError.classList.add('hidden');
+            }
+
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                alert('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!');
+                window.location.href = '../dangnhap.html';
+                return;
+            }
+
+            if (currentUser.VaiTro !== 'customer') {
+                alert('Chỉ khách hàng mới có thể đặt hàng!');
+                return;
+            }
+
+            const orderId = 'ORDER_' + Date.now();
+            latestOrderId = orderId;
+            const orderTime = new Date().toLocaleString();
+            const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+            const order = {
+                MaDonHang: orderId,
+                MaKhachHang: currentUser.MaKhachHang,
+                MaQuanLy: 'QL001',
+                NgayDat: orderTime,
+                TongTien: totalAmount,
+                TrangThai: 'Chờ xử lý',
+                PhuongThucThanhToan: paymentMethod === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt',
+                DaThanhToan: false,
+                DiaChiGiaoHang: deliveryAddress,
+                ThoiGianGiao: deliveryTime.toLocaleString(),
+                CartItems: [...cart]
+            };
+
+            let orders = JSON.parse(localStorage.getItem('orders')) || [];
+            orders.push(order);
+            localStorage.setItem('orders', JSON.stringify(orders));
+
+            sendNotification(orderId, currentUser.MaKhachHang, deliveryAddress, order.TrangThai);
+
+            localStorage.removeItem('cart');
+            updateCart();
+
+            const message = document.getElementById('message');
+            message.innerHTML = `
+                <strong>Đặt hàng thành công!</strong><br/>
+                Mã đơn hàng: ${order.MaDonHang}<br/>
+                Khách hàng: ${currentUser.TenKhachHang}<br/>
+                Mã khách hàng: ${order.MaKhachHang}<br/>
+                Mã quản lý: ${order.MaQuanLy}<br/>
+                Ngày đặt: ${order.NgayDat}<br/>
+                Tổng tiền: ${order.TongTien.toLocaleString()} VNĐ<br/>
+                Trạng thái: <span class="text-yellow-600 font-semibold">${order.TrangThai}</span><br/>
+                Phương thức thanh toán: ${order.PhuongThucThanhToan}<br/>
+                Trạng thái thanh toán: ${order.DaThanhToan ? 'Đã thanh toán' : 'Chưa thanh toán'}<br/>
+                Địa chỉ giao hàng: ${order.DiaChiGiaoHang}<br/>
+                Thời gian giao: ${order.ThoiGianGiao}<br/>
+                <a href="lichsudonhang.html" class="text-amber-900 hover:underline">Xem lịch sử đơn hàng</a>
+            `;
+            message.classList.remove('hidden');
+
+            document.getElementById('cancel-order-btn').classList.remove('hidden');
+        }
+
+        // Hàm hiển thị nút hủy đơn hàng
+        function showCancelOrder() {
+            if (latestOrderId) {
+                cancelOrder(latestOrderId);
+            } else {
+                alert('Không tìm thấy đơn hàng để hủy!');
+            }
+        }
+
+        // Hàm hủy đơn hàng
+        function cancelOrder(orderId) {
+            let orders = JSON.parse(localStorage.getItem('orders')) || [];
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
+            const orderIndex = orders.findIndex(order => order.MaDonHang === orderId);
+            if (orderIndex !== -1) {
+                const order = orders[orderIndex];
+                if (order.TrangThai === 'Chờ xử lý') {
+                    order.CartItems.forEach(item => {
+                        inventory[item.name] = (inventory[item.name] || 0) + item.quantity;
+                    });
+                    localStorage.setItem('inventory', JSON.stringify(inventory));
+
+                    orders[orderIndex].TrangThai = 'Đã hủy';
+                    localStorage.setItem('orders', JSON.stringify(orders));
+
+                    sendNotification(orderId, order.MaKhachHang, order.DiaChiGiaoHang, 'Đã hủy');
+
+                    const message = document.getElementById('message');
+                    message.innerHTML = `
+                        Đơn hàng ${orderId} đã được hủy thành công! Trạng thái: <span class="text-red-600 font-semibold">Đã hủy</span><br/>
+                    `;
+                    message.classList.remove('hidden');
+                    document.getElementById('cancel-order-btn').classList.add('hidden');
+                } else {
+                    alert('Chỉ có thể hủy đơn hàng ở trạng thái "Chờ xử lý"!');
+                }
+            }
+        }
+
+        // Khởi tạo trang
+        try {
+            checkLoginStatus();
+            updateCart();
+            setMinDeliveryTime();
+        } catch (error) {
+            console.error('Lỗi khi khởi tạo trang:', error);
+            document.getElementById('cart-list').innerHTML = '<p class="text-red-600">Đã xảy ra lỗi khi tải giỏ hàng. Vui lòng thử lại.</p>';
+        }
+    </script>
+</body>
+</html> 

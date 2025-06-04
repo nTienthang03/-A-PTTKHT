@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý - Highlands Coffee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-5xl">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Quản Lý Hệ Thống</h2>
+        <div class="text-right mb-4">
+            <button onclick="logout()" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-500">Đăng Xuất</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="flex space-x-4 border-b">
+                <button onclick="showSection('users')" class="pb-2 px-4 text-amber-900 font-semibold border-b-2 border-amber-900">Quản Lý Người Dùng</button>
+                <button onclick="showSection('orders')" class="pb-2 px-4 text-gray-600 hover:text-amber-900">Quản Lý Đơn Hàng</button>
+                <button onclick="showSection('reports')" class="pb-2 px-4 text-gray-600 hover:text-amber-900">Thống Kê</button>
+            </div>
+        </div>
+
+        <!-- Quản Lý Người Dùng -->
+        <div id="users-section" class="section">
+            <h3 class="text-xl font-semibold mb-4">Danh Sách Người Dùng</h3>
+            <table class="w-full border-collapse mb-6">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border p-3 text-left">Mã</th>
+                        <th class="border p-3 text-left">Tên</th>
+                        <th class="border p-3 text-left">Vai Trò</th>
+                        <th class="border p-3 text-left">Email</th>
+                        <th class="border p-3 text-left">SĐT</th>
+                        <th class="border p-3 text-left">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="userList"></tbody>
+            </table>
+            <div id="editUserForm" class="hidden bg-gray-50 p-4 rounded-md border border-gray-300 mb-6"></div>
+        </div>
+
+        <!-- Quản Lý Đơn Hàng -->
+        <div id="orders-section" class="section hidden">
+            <h3 class="text-xl font-semibold mb-4">Danh Sách Đơn Hàng</h3>
+            <table class="w-full border-collapse mb-6">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border p-3 text-left">Mã Đơn Hàng</th>
+                        <th class="border p-3 text-left">Khách Hàng</th>
+                        <th class="border p-3 text-left">Ngày Đặt</th>
+                        <th class="border p-3 text-left">Trạng Thái</th>
+                        <th class="border p-3 text-left">Thanh Toán</th>
+                        <th class="border p-3 text-left">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="orderList"></tbody>
+            </table>
+            <div id="editOrderForm" class="hidden bg-gray-50 p-4 rounded-md border border-gray-300 mb-6"></div>
+        </div>
+
+        <!-- Thống Kê -->
+        <div id="reports-section" class="section hidden">
+            <h3 class="text-xl font-semibold mb-4">Thống Kê Báo Cáo</h3>
+            <div class="mb-4">
+                <label for="report-type" class="block text-gray-700 font-semibold mb-2">Loại Báo Cáo</label>
+                <select id="report-type" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900" onchange="generateReport()">
+                    <option value="daily">Theo Ngày</option>
+                    <option value="monthly">Theo Tháng</option>
+                </select>
+                <input type="date" id="report-date" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900 ml-2" onchange="generateReport()">
+            </div>
+            <div id="reportResult" class="bg-gray-50 p-4 rounded-md border border-gray-300"></div>
+        </div>
+    </div>
+
+    <script>
+        // Kiểm tra vai trò quản lý
+        function checkManagerAccess() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser || currentUser.VaiTro !== 'manager') {
+                alert('Bạn cần đăng nhập với vai trò Quản Lý để truy cập trang này!');
+                window.location.href = '../dangnhap.html';
+            }
+        }
+
+        // Đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            alert('Đăng xuất thành công!');
+            window.location.href = '../dangnhap.html';
+        }
+
+        // Hiển thị section
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+            document.querySelectorAll('.pb-2').forEach(btn => btn.classList.remove('text-amber-900', 'border-b-2', 'border-amber-900'));
+            document.querySelector(`button[onclick="showSection('${sectionId}')"]`).classList.add('text-amber-900', 'border-b-2', 'border-amber-900');
+            if (sectionId === 'users') loadUsers();
+            if (sectionId === 'orders') loadOrders();
+            if (sectionId === 'reports') generateReport();
+        }
+
+        // Lấy tên khách hàng từ registeredUsers
+        function getCustomerName(customerId) {
+            const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const customer = users.find(user => user.MaKhachHang === customerId);
+            return customer ? customer.TenKhachHang : 'Khách Hàng Không Xác Định';
+        }
+
+        // Tải danh sách người dùng
+        function loadUsers() {
+            const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+            users.forEach(user => {
+                const userId = user.MaAdmin || user.MaNhanVien || user.MaKhachHang;
+                const userName = user.TenDangNhap || user.TenNhanVien || user.TenKhachHang;
+                const role = user.VaiTro === 'manager' ? 'Quản Lý' : user.VaiTro === 'employee' ? 'Nhân Viên' : 'Khách Hàng';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border p-3">${userId}</td>
+                    <td class="border p-3">${userName}</td>
+                    <td class="border p-3">${role}</td>
+                    <td class="border p-3">${user.Email || '-'}</td>
+                    <td class="border p-3">${user.SDT || '-'}</td>
+                    <td class="border p-3">
+                        <button onclick="editUser('${userId}')" class="bg-amber-900 text-white py-1 px-3 rounded-md hover:bg-amber-800">Sửa</button>
+                        <button onclick="deleteUser('${userId}')" class="bg-red-600 text-white py-1 px-3 rounded-md hover:bg-red-500">Xóa</button>
+                    </td>
+                `;
+                userList.appendChild(row);
+            });
+
+
+        }
+
+        // Sửa thông tin người dùng
+        function editUser(userId) {
+            const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const user = users.find(u => u.MaAdmin === userId || u.MaNhanVien === userId || u.MaKhachHang === userId);
+            if (!user) return;
+            const editForm = document.getElementById('editUserForm');
+            const userName = user.TenDangNhap || user.TenNhanVien || user.TenKhachHang;
+            editForm.innerHTML = `
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Chỉnh Sửa Người Dùng ${userId}</h3>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Tên</label>
+                    <input type="text" id="editName" value="${userName}" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Email</label>
+                    <input type="email" id="editEmail" value="${user.Email || ''}" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">SĐT</label>
+                    <input type="text" id="editPhone" value="${user.SDT || ''}" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                </div>
+                ${user.VaiTro === 'customer' ? `
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Địa Chỉ</label>
+                    <input type="text" id="editAddress" value="${user.DiaChi || ''}" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                </div>` : ''}
+                <button onclick="saveUser('${userId}')" class="bg-amber-900 text-white py-2 px-4 rounded-md hover:bg-amber-800">Lưu</button>
+                <button onclick="document.getElementById('editUserForm').classList.add('hidden')" class="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 ml-2">Hủy</button>
+            `;
+            editForm.classList.remove('hidden');
+        }
+
+        // Lưu thông tin người dùng
+        function saveUser(userId) {
+            const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const userIndex = users.findIndex(u => u.MaAdmin === userId || u.MaNhanVien === userId || u.MaKhachHang === userId);
+            if (userIndex === -1) return;
+            const user = users[userIndex];
+            const name = document.getElementById('editName').value.trim();
+            const email = document.getElementById('editEmail').value.trim();
+            const phone = document.getElementById('editPhone').value.trim();
+            const address = document.getElementById('editAddress')?.value.trim();
+            if (!name || !email || !phone || (user.VaiTro === 'customer' && !address)) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+            if (user.VaiTro === 'manager') {
+                user.TenDangNhap = name;
+                user.Email = email;
+            } else if (user.VaiTro === 'employee') {
+                user.TenNhanVien = name;
+                user.Email = email;
+                user.SDT = phone;
+            } else {
+                user.TenKhachHang = name;
+                user.Email = email;
+                user.SDT = phone;
+                user.DiaChi = address;
+            }
+            users[userIndex] = user;
+            localStorage.setItem('registeredUsers', JSON.stringify(users));
+            alert('Cập nhật thông tin người dùng thành công!');
+            loadUsers();
+            document.getElementById('editUserForm').classList.add('hidden');
+        }
+
+        // Xóa người dùng
+        function deleteUser(userId) {
+            if (!confirm('Bạn có chắc muốn xóa người dùng này?')) return;
+            let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            users = users.filter(u => u.MaAdmin !== userId && u.MaNhanVien !== userId && u.MaKhachHang !== userId);
+            localStorage.setItem('registeredUsers', JSON.stringify(users));
+            alert('Xóa người dùng thành công!');
+            loadUsers();
+        }
+
+        // Tải danh sách đơn hàng
+        function loadOrders() {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const orderList = document.getElementById('orderList');
+            orderList.innerHTML = '';
+            orders.forEach(order => {
+                const customerName = getCustomerName(order.MaKhachHang);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border p-3">${order.MaDonHang}</td>
+                    <td class="border p-3">${customerName}</td>
+                    <td class="border p-3">${order.NgayDat}</td>
+                    <td class="border p-3">
+                        <select onchange="updateOrderStatus('${order.MaDonHang}', this.value)" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                            <option value="Chờ xử lý" ${order.TrangThai === 'Chờ xử lý' ? 'selected' : ''}>Chờ xử lý</option>
+                            <option value="Đang xử lý" ${order.TrangThai === 'Đang xử lý' ? 'selected' : ''}>Đang xử lý</option>
+                            <option value="Đã giao" ${order.TrangThai === 'Đã giao' ? 'selected' : ''}>Đã giao</option>
+                            <option value="Đã hủy" ${order.TrangThai === 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
+                            <option value="Đã thanh toán" ${order.TrangThai === 'Đã thanh toán' ? 'selected' : ''}>Đã thanh toán</option>
+                        </select>
+                    </td>
+                    <td class="border p-3">
+                        <button onclick="togglePaymentStatus('${order.MaDonHang}')" class="bg-${order.DaThanhToan ? 'green' : 'red'}-600 text-white py-1 px-3 rounded-md hover:bg-${order.DaThanhToan ? 'green' : 'red'}-500">${order.DaThanhToan ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}</button>
+                    </td>
+                    <td class="border p-3">
+                        <button onclick="editOrder('${order.MaDonHang}')" class="bg-amber-900 text-white py-1 px-3 rounded-md hover:bg-amber-800">Sửa</button>
+                    </td>
+                `;
+                orderList.appendChild(row);
+            });
+        }
+
+        // Cập nhật trạng thái đơn hàng
+        function updateOrderStatus(orderId, newStatus) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.MaDonHang === orderId);
+            if (order) {
+                order.TrangThai = newStatus;
+                // Nếu trạng thái là "Đã thanh toán", cập nhật DaThanhToan
+                if (newStatus === 'Đã thanh toán') {
+                    order.DaThanhToan = true;
+                }
+                localStorage.setItem('orders', JSON.stringify(orders));
+                sendNotification(orderId, order.MaKhachHang, order.DiaChiGiaoHang, newStatus);
+                alert(`Đơn hàng ${orderId} đã được cập nhật thành ${newStatus}!`);
+                loadOrders();
+            }
+        }
+
+        // Xử lý thanh toán
+        function togglePaymentStatus(orderId) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.MaDonHang === orderId);
+            if (order) {
+                order.DaThanhToan = !order.DaThanhToan;
+                // Nếu DaThanhToan là true, cập nhật TrangThai thành "Đã thanh toán"
+                if (order.DaThanhToan) {
+                    order.TrangThai = 'Đã thanh toán';
+                }
+                localStorage.setItem('orders', JSON.stringify(orders));
+                sendNotification(orderId, order.MaKhachHang, order.DiaChiGiaoHang, `Thanh toán: ${order.DaThanhToan ? 'Đã thanh toán' : 'Chưa thanh toán'}`);
+                alert(`Đơn hàng ${orderId} đã được cập nhật trạng thái thanh toán!`);
+                loadOrders();
+            }
+        }
+
+        // Sửa đơn hàng
+        function editOrder(orderId) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.MaDonHang === orderId);
+            if (!order) return;
+            const editForm = document.getElementById('editOrderForm');
+            const customerName = getCustomerName(order.MaKhachHang);
+            let itemsHtml = order.CartItems.map((item, index) => `
+                <div class="mb-2">
+                    <input type="text" id="itemName${index}" value="${item.name}" class="w-1/3 p-2 border rounded-md">
+                    <input type="number" id="itemQuantity${index}" value="${item.quantity}" min="1" class="w-1/4 p-2 border rounded-md ml-2">
+                    <input type="number" id="itemPrice${index}" value="${item.price}" min="0" class="w-1/4 p-2 border rounded-md ml-2">
+                </div>
+            `).join('');
+            editForm.innerHTML = `
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Chỉnh Sửa Đơn Hàng ${orderId}</h3>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Khách Hàng</label>
+                    <input type="text" id="editCustomer" value="${customerName}" class="w-full p-2 border rounded-md" disabled>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Địa Chỉ Giao Hàng</label>
+                    <input type="text" id="editAddress" value="${order.DiaChiGiaoHang}" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Thời Gian Giao</label>
+                    <input type="datetime-local" id="editDeliveryTime" value="${new Date(order.ThoiGianGiao).toISOString().slice(0, 16)}" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-900">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">Sản Phẩm</label>
+                    ${itemsHtml}
+                </div>
+                <button onclick="saveOrder('${orderId}', ${order.CartItems.length})" class="bg-amber-900 text-white py-2 px-4 rounded-md hover:bg-amber-800">Lưu</button>
+                <button onclick="document.getElementById('editOrderForm').classList.add('hidden')" class="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 ml-2">Hủy</button>
+            `;
+            editForm.classList.remove('hidden');
+        }
+
+        // Lưu đơn hàng
+        function saveOrder(orderId, itemCount) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const orderIndex = orders.findIndex(o => o.MaDonHang === orderId);
+            if (orderIndex === -1) return;
+            const order = orders[orderIndex];
+            const address = document.getElementById('editAddress').value.trim();
+            const deliveryTime = document.getElementById('editDeliveryTime').value;
+            if (!address || !deliveryTime) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+            const items = [];
+            let total = 0;
+            for (let i = 0; i < itemCount; i++) {
+                const name = document.getElementById(`itemName${i}`).value.trim();
+                const quantity = parseInt(document.getElementById(`itemQuantity${i}`).value);
+                const price = parseInt(document.getElementById(`itemPrice${i}`).value);
+                if (!name || quantity < 1 || price < 0) {
+                    alert('Thông tin sản phẩm không hợp lệ!');
+                    return;
+                }
+                items.push({ name, quantity, price });
+                total += quantity * price;
+            }
+            order.DiaChiGiaoHang = address;
+            order.ThoiGianGiao = new Date(deliveryTime).toLocaleString();
+            order.CartItems = items;
+            order.TongTien = total;
+            orders[orderIndex] = order;
+            localStorage.setItem('orders', JSON.stringify(orders));
+            sendNotification(orderId, order.MaKhachHang, order.DiaChiGiaoHang, `Đã chỉnh sửa`);
+            alert('Cập nhật đơn hàng thành công!');
+            loadOrders();
+            document.getElementById('editOrderForm').classList.add('hidden');
+        }
+
+        // Gửi thông báo
+        function sendNotification(orderId, customer, address, status) {
+            let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            const time = new Date().toLocaleString();
+            notifications.push({
+                orderId: orderId,
+                customer: customer,
+                time: time,
+                message: `Đơn hàng ${orderId} từ ${customer} đến ${address} - ${status}`
+            });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+        }
+
+        // Thống kê báo cáo
+        function generateReport() {
+            const reportType = document.getElementById('report-type').value;
+            const reportDate = document.getElementById('report-date').value;
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const reportResult = document.getElementById('reportResult');
+            let filteredOrders = orders;
+            let totalRevenue = 0;
+            let orderCount = 0;
+
+            if (reportDate) {
+                const selectedDate = new Date(reportDate);
+                if (reportType === 'daily') {
+                    filteredOrders = orders.filter(o => new Date(o.NgayDat).toDateString() === selectedDate.toDateString());
+                } else {
+                    filteredOrders = orders.filter(o => new Date(o.NgayDat).getMonth() === selectedDate.getMonth() && new Date(o.NgayDat).getFullYear() === selectedDate.getFullYear());
+                }
+            }
+
+            orderCount = filteredOrders.length;
+            totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.TrangThai !== 'Đã hủy' ? o.TongTien : 0), 0);
+
+            const statusCounts = {
+                'Chờ xử lý': 0,
+                'Đang xử lý': 0,
+                'Đã giao': 0,
+                'Đã hủy': 0,
+                'Đã thanh toán': 0
+            };
+            filteredOrders.forEach(o => statusCounts[o.TrangThai]++);
+
+            reportResult.innerHTML = `
+                <h4 class="text-lg font-semibold text-gray-800 mb-2">Báo Cáo ${reportType === 'daily' ? 'Theo Ngày' : 'Theo Tháng'}</h4>
+                <p><strong>Ngày/Tháng:</strong> ${reportDate || 'Tất cả'}</p>
+                <p><strong>Tổng Số Đơn Hàng:</strong> ${orderCount}</p>
+                <p><strong>Tổng Doanh Thu:</strong> ${totalRevenue.toLocaleString()} VNĐ</p>
+                <p><strong>Trạng Thái Đơn Hàng:</strong></p>
+                <ul class="list-disc pl-5">
+                    <li>Chờ xử lý: ${statusCounts['Chờ xử lý']}</li>
+                    <li>Đang xử lý: ${statusCounts['Đang xử lý']}</li>
+                    <li>Đã giao: ${statusCounts['Đã giao']}</li>
+                    <li>Đã hủy: ${statusCounts['Đã hủy']}</li>
+                    <li>Đã thanh toán: ${statusCounts['Đã thanh toán']}</li>
+                </ul>
+            `;
+        }
+
+        // Khởi tạo trang
+        window.onload = () => {
+            checkManagerAccess();
+            showSection('users');
+        };
+    </script>
+</body>
+</html>
